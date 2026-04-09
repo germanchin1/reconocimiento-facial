@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face ID - Acceso Inteligente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 95%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        h1 span {
+            color: var(--primary);
+        }
+
+        p.subtitle {
+            color: #64748b;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .main-workflow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .main-workflow { grid-template-columns: 1fr; }
+        }
+
+        .step-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .media-container {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #f1f5f9;
+            aspect-ratio: 1/1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .media-container:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+        }
+
+        #video, #img-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            color: #64748b;
+        }
+
+        .face-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 50% 50% 40% 40%;
+            pointer-events: none;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1.2rem 2.5rem;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            background: #4f46e5;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #status-area {
+            margin-top: 3rem;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 1.5rem 3rem;
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .status-badge.success { background: #dcfce7; color: #166534; }
+        .status-badge.error { background: #fee2e2; color: #991b1b; }
+        .status-badge.pending { background: #f1f5f9; color: #475569; }
+
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #cbd5e1;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>👤 Face<span>ID</span></h1>
+        <p class="subtitle">Identificación biométrica sencilla y segura</p>
+    </header>
+
+    <div class="main-workflow">
+        <!-- Paso 1 -->
+        <div class="step-card">
+            <div class="media-container" id="upload-container">
+                <input type="file" id="file-input" class="hidden" accept="image/*">
+                <div class="upload-placeholder" id="placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Sube tu foto base</span>
+                </div>
+                <img id="img-preview" class="hidden">
+            </div>
+            <p style="font-size: 0.9rem; color: #94a3b8;">Sube una foto clara de tu cara</p>
+        </div>
+
+        <!-- Paso 2 -->
+        <div class="step-card">
+            <div class="media-container">
+                <video id="video" autoplay muted></video>
+                <div class="face-guide"></div>
+                <canvas id="canvas" class="hidden"></canvas>
+            </div>
+            <button class="btn" id="btn-verify">Verificar mi Identidad</button>
+        </div>
+    </div>
+
+    <div id="status-area">
+        <!-- Status dinámico aquí -->
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const btnVerify = document.getElementById('btn-verify');
+    const fileInput = document.getElementById('file-input');
+    const uploadContainer = document.getElementById('upload-container');
+    const placeholder = document.getElementById('placeholder');
+    const imgPreview = document.getElementById('img-preview');
+    const statusArea = document.getElementById('status-area');
+
+    let registroBlob = null;
+
+    // Cámara
+    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 640, facingMode: "user" } })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => alert("Requerimos acceso a la cámara para funcionar."));
+
+    // Subida
+    uploadContainer.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            registroBlob = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                imgPreview.src = ev.target.result;
+                imgPreview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Verificar
+    btnVerify.onclick = async () => {
+        if (!registroBlob) {
+            updateStatus('error', '⚠️ Sube primero tu foto base');
+            return;
+        }
+
+        updateStatus('pending', '<div class="loader"></div> Analizando rasgos...');
+        btnVerify.disabled = true;
+
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        canvas.toBlob(async (webcamBlob) => {
+            const formData = new FormData();
+            formData.append('img1', registroBlob, 'ref.jpg');
+            formData.append('img2', webcamBlob, 'cam.jpg');
+
+            try {
+                const response = await fetch('http://localhost:8181/verify', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                if (data.verified) {
+                    updateStatus('success', `✨ ¡Identidad Confirmada! (${Math.round((1-data.distance)*100)}%)`);
+                } else {
+                    updateStatus('error', '❌ Acceso Denegado: No eres tú');
+                }
+            } catch (err) {
+                updateStatus('error', '📡 Error de conexión: ¿Docker está activo?');
+            } finally {
+                btnVerify.disabled = false;
+            }
+        }, 'image/jpeg');
+    };
+
+    function updateStatus(type, message) {
+        statusArea.innerHTML = `<div class="status-badge ${type}">${message}</div>`;
+    }
+</script>
+
+</body>
+</html>
